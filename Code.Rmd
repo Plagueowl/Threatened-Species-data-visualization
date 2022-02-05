@@ -1,0 +1,243 @@
+---
+title: "Home Assignment"
+output: html_notebook
+---
+Home Assignment of Group 3, batch 1, CSA
+
+Members:-
+Aahan Jain
+Aarya Tiwari
+Harshal Abak
+Abhang Omkar
+Abu Dujana Ansari
+
+
+```{r}
+library(readr)
+threatened_species <- read_csv("SYB64_313_202110_Threatened Species.csv")
+View(threatened_species)
+
+```
+
+```{r}
+summary(threatened_species)    #For checking the number of columns and datatypes
+
+```
+This dataset is poorly named and needs a lot of preprocessing to actually work on it.
+
+Looking at the dataset, we can identify the 7 columns as:-
+
+1) NA
+2) Country, Region or province
+3) year
+4) Type of Threatened Species
+5) Number of Threatened Species
+6) Footnotes about different country, region or any kind of side information of the    data
+7) Source, by whom the information was gathered.
+
+
+
+First, we are going to name the columns and rows properly.
+
+```{r}
+species = data.frame(
+  RN = threatened_species$T23, Country = threatened_species$`Threatened species`, Year = strtoi(threatened_species$...3), Type = threatened_species$...4, Value = strtoi(threatened_species$...5)
+) 
+species = species[2:6921,]   #the first row had miscellaneous values
+
+species[species == "Threatened Species: Vertebrates (number)"] = "Vertebrates"
+species[species == "Threatened Species: Invertebrates (number)"] = "Invertebrates"
+species[species == "Threatened Species: Plants (number)"] = "Plants"
+species[species == "Threatened Species: Total (number)"] = "Total"   #Renaming the long columns
+View(species)
+summary(species)
+```
+
+
+
+
+```{r}
+table(threatened_species$...7)
+```
+
+
+
+
+Here, we dropped the footnotes and the source columns because footnotes didn't have any relevant information about the data, for us at least. The source has one single value throughout, which too is not really required for this analysis.
+
+
+
+Now, we analyze what is there in different columns.
+
+```{r}
+table(species$Year)
+```
+
+
+
+
+```{r}
+table(species$Type)
+```
+
+
+
+
+
+```{r}
+head(table(species$Country))
+
+```
+
+
+
+After briefly analyzing the data, we get to see that the dataset contains the number of threatened species of different countries in the different years. The species are particularly of three kinds:
+
+
+
+1) Vertebrates
+2) Invertebrates
+3) Plants
+
+The dataset contains the count of threatened species of these particular years:-
+
+2004
+2010
+2015
+2018
+2019
+2020
+2021
+
+
+The number of occurrences of different countries and year are uneven because some year's data is missing for a few regions. the type section has one uncertain occurrence of total threatened species and one disappearance of Vertebrates section, this is most probably because of any error in the dataset itself.
+
+
+
+Here comes the final analysis part. As per the instructions given, we need to analyze and visualize the data of 5 contrasting countries.
+
+
+For now, we are going to analyze the following countries
+
+1) India
+2) Australia
+3) United States of America
+4) Bangladesh
+5) Japan
+
+
+First, we are going to assign different data frames for each species, for cleaner analysis 
+
+
+```{r}
+df_Vertebrates = species[(species$Country == "India" | species$Country == "Japan"| species$Country == "Australia"| species$Country == "United States of America"| species$Country == "Bangladesh") & species$Type == "Vertebrates",]
+
+df_invertebrates = species[(species$Country == "India" | species$Country == "Japan"| species$Country == "Australia"| species$Country == "United States of America"| species$Country == "Bangladesh") & species$Type == "Invertebrates",]
+
+df_plants = species[(species$Country == "India" | species$Country == "Japan"| species$Country == "Australia"| species$Country == "United States of America"| species$Country == "Bangladesh") & species$Type == "Plants",]
+
+df_Total = species[(species$Country == "India" | species$Country == "Japan"| species$Country == "Australia"| species$Country == "United States of America"| species$Country == "Bangladesh") & species$Type == "Total",]
+
+#to fill NA Values in the total threatened species dataframe
+
+for(x in which(is.na(df_Total$Value))){
+  df_Total$Value[x] = df_Vertebrates[(df_Vertebrates$Country == df_Total$Country[x] & df_Vertebrates$Year == df_Total$Year[x]),5] + df_invertebrates[(df_invertebrates$Country == df_Total$Country[x] & df_invertebrates$Year == df_Total$Year[x]),5] +df_plants[(df_plants$Country == df_Total$Country[x] & df_plants$Year == df_Total$Year[x]),5]
+  }
+
+
+View(df_Total)
+
+```
+
+
+
+Now, we are going to plot the values of threatened species to see the trends in different regions
+
+
+First, we see trends of Threatened Vertebrates.
+
+
+
+
+
+```{r}
+library("ggplot2")
+
+plot_vertebrates = ggplot(df_Vertebrates,aes(x = Year, y = Value, color = Country))
+
+plot_vertebrates + geom_point() +geom_line() + ggtitle("Trends of Threatened Vertebrates")
+
+```
+
+Looking at the graph, we get the following Conclusions:-
+- Bangladesh has the least amount of Threatened vertebrates.
+- India and Australia started off with the same number of threatened invertebrates, but India’s   trend spiked up more.
+- In the year 2010, India surpassed USA with more number of threatened vertebrates.
+- Japan and USA follow almost the same pattern but USA’s count of value is more.
+
+
+
+
+Then, invertebrates.
+
+```{r}
+plot_invertebrates = ggplot(df_invertebrates,aes(x = Year, y = Value, color = Country))
+
+plot_invertebrates + geom_point() +geom_line() + ggtitle("Trends of Threatened Invertebrates")
+```
+Looking at this graph, we get the following 
+Conclusions:-
+- Bangladesh had no threatened invertebrates over the years.
+- India and Japan follow nearly the same pattern over the years, with a little difference of      values.
+- USA has the most number of threatened invertebrates and the number varied almost linearly over   the span of 17 years.
+- Australia’s count spiked up between 2004 and 2010.
+
+
+Next, Threatened Plants.
+
+```{r}
+plot_plants = ggplot(df_plants,aes(x = Year, y = Value, color = Country))
+
+plot_plants + geom_point() +geom_line() + ggtitle("Trends of Threatened Plant Species")
+```
+Looking at this graph, we get the following 
+Conclusions:-
+- Japan and Bangladesh had very less variations over the years.
+- Due to forest fires and other natural disasters, Australia’s count suddenly increased between   2019 and 2020, surpassing every other country in this subset.
+- USA’s count also showed a sudden increase between 2015 and  2018.
+
+
+Finally, we see the total threatened species trend
+
+```{r}
+plot_total = ggplot(df_Total,aes(x = Year, y = Value, color = Country))
+
+plot_total + geom_point() +geom_line() + ggtitle("Trends of net Threatened Species (Vertebrates, Invertebrates and plants)")
+
+
+
+```
+Looking at this graph, we get the following 
+Conclusions:-
+- Bangladesh has the least amount of variation due to less disasters and low development rate.
+- Australia shows sudden increases due to the disasters.
+
+
+Now, we are going to visualize the total number of threatened species of each year using bar plots
+
+
+For 2004:
+
+
+
+```{r}
+sample1= df_Total[df_Total$Year == 2004 |df_Total$Year == 2010 |df_Total$Year == 2015 |df_Total$Year == 2020,]
+
+
+bp1 = ggplot(sample1, aes(x = Year, y = Value, fill = Country)) + geom_bar(width = 3, stat = "identity", position = position_dodge()) +ggtitle("Trends of net Threatened Species")
+
+bp1
+
+```
+Conclusions and Final thoughts:
+Since this particular assessment demanded to restrict the project for any five countries, we can increase the count to as many as we want, considering the cleanliness of the plots. We can go ahead and shortlist any country we want and see the beautiful graphs of the data and play around with them.
